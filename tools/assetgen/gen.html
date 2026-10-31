@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>METALHIVE · generador de assets</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Ops+One&display=block">
+<style>body{margin:0;background:#1a120e;color:#c9b38e;font:13px sans-serif;padding:12px}</style></head>
+<body>Generador de assets: lo maneja <code>generate.mjs</code>.
+<script type="module">
+import * as ART from './art.js';
+import { buildTerrain, buildCloud } from './terrain.js';
+import { buildFX, buildIcon } from './fx.js';
+import { SOUNDS, renderSound, renderMusic, wav16 } from './synth.js';
+
+const png = (c) => c.toDataURL('image/png').split(',')[1];
+const b64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s); };
+
+window.genArt = async () => {
+  await document.fonts.load("40px 'Black Ops One'");
+  const out = {};
+  const ship = ART.buildShipFrames(9);
+  ship.forEach((s, i) => { out[`ship_${i}.png`] = png(s.img); });
+  out['ship_white.png'] = png(ship[4].white);
+  const en = ART.buildEnemySprites();
+  out['stinger.png'] = png(en.stinger.img); out['stinger_w.png'] = png(en.stinger.white);
+  out['tabano.png'] = png(en.tabano.img); out['tabano_w.png'] = png(en.tabano.white);
+  en.beetle.forEach((s, i) => { out[`beetle_${i}.png`] = png(s.img); out[`beetle_${i}_w.png`] = png(s.white); });
+  for (const [k, c] of Object.entries(buildFX())) out[`${k}.png`] = png(c);
+  for (let i = 0; i < 4; i++) out[`cloud_${i}.png`] = png(buildCloud(100 + i * 13));
+  const terrain = buildTerrain();
+  out['terrain.jpg'] = terrain.toDataURL('image/jpeg', 0.88).split(',')[1];
+  out['__icon.png'] = png(buildIcon(ship[4], terrain));
+  return out;
+};
+
+window.genSound = async () => {
+  const out = {};
+  for (const [name, [, variants]] of Object.entries(SOUNDS))
+    for (let v = 0; v < variants; v++) out[`${name}_${v}.wav`] = b64(wav16(await renderSound(name, v)));
+  out['music.wav'] = b64(wav16(await renderMusic()));
+  return out;
+};
+window.ready = true;
+</script></body></html>
+<script type="module">
+// Vista previa de composición (no se exporta al juego): 390×844 pt a 2x
+import * as ART from './art.js';
+import { buildTerrain, buildCloud } from './terrain.js';
+window.genPreview = async () => {
+  const W = 390, H = 844, S = 2;
+  const c = document.createElement('canvas'); c.width = W * S; c.height = H * S;
+  const g = c.getContext('2d'); g.scale(S, S);
+  const t = buildTerrain();
+  g.drawImage(t, 75 * 2, 900 * 2, W * 2, H * 2, 0, 0, W, H);
+  const cl = buildCloud(113);
+  g.globalAlpha = 0.45; g.drawImage(cl, 120, 380, 420, 290); g.globalAlpha = 1;
+  const ship = ART.buildShipFrames(9), en = ART.buildEnemySprites();
+  ART.drawSprite(g, ship[5], 200, 700, 0.8);
+  ART.drawSprite(g, en.beetle[0], 120, 330, 1);
+  ART.drawSprite(g, en.beetle[1], 260, 280, 1);
+  ART.drawSprite(g, en.tabano, 300, 160, 1);
+  for (const [x, y] of [[100, 150], [140, 190], [180, 150]]) ART.drawSprite(g, en.stinger, x, y, 1.25);
+  return c.toDataURL('image/png').split(',')[1];
+};
+</script>

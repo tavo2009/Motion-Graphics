@@ -1,2 +1,6 @@
-node_modules/
 .DS_Store
+node_modules/
+xcuserdata/
+DerivedData/
+*.xcuserstate
+tools/assetgen/.icon-1024.png

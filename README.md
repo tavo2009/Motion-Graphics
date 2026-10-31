@@ -1,44 +1,57 @@
-# METALHIVE — prototipo
+# METALHIVE
 
-Arcade vertical ciberorgánico (steampunk ferroso + insectos biomecánicos) pensado para **iPhone y iPad en vertical**.
+Arcade vertical de naves, nativo para **iPhone, iPad y Mac** (Swift + SpriteKit), pensado para publicarse en App Store.
+Homenaje a los arcades clásicos de los 80: física de impactos metálicos, sonido táctil y una pantalla que siempre se entiende.
+
 Biblia de concepto: [`docs/BIBLIA.md`](docs/BIBLIA.md) · referencias de nave: [`docs/referencias/`](docs/referencias/).
 
-## Jugar
+## Abrir y ejecutar
 
-Módulos ES sin build. Hay que servirlo por HTTP:
+Requiere **Xcode 16 o superior** en un Mac.
 
-```bash
-python3 -m http.server 8000
-# http://localhost:8000            → juego
-# http://localhost:8000/?god       → invulnerable (para probar)
-# http://localhost:8000/sprites.html → hoja de sprites (nave en 9 frames de rolido + enemigos)
-```
+1. Abrí `MetalHive.xcodeproj`.
+2. Seleccioná el target **MetalHive** → *Signing & Capabilities* → elegí tu **Team** (tu Apple ID alcanza para probar en tus dispositivos).
+   Si Xcode se queja del identificador, cambiá `com.tavo2009.metalhive` por uno propio.
+3. Arriba, elegí el destino: un simulador de iPhone/iPad, tu iPhone conectado, o **My Mac**.
+4. ▶︎ Run (⌘R).
 
-En iOS: abrir desde Safari en la misma red (`http://IP-de-tu-compu:8000`) y "Agregar a pantalla de inicio" para jugar a pantalla completa.
-Si no suena, revisá el interruptor de silencio del iPhone (WebAudio lo respeta).
+Un solo target compila para las tres plataformas. iOS 17+ / macOS 14+.
 
-**Controles** — Táctil: arrastrar en cualquier lugar (movimiento relativo, el dedo no tapa la nave) · disparo automático · botón **ONDA** abajo a la derecha.
-Teclado: flechas/WASD · Espacio = onda · P = pausa · M = sonido.
+**Controles**
+- iPhone/iPad: arrastrá en cualquier lugar (movimiento relativo: el dedo no tapa la nave) · disparo automático · botón **ONDA**.
+- Mac: flechas/WASD (o arrastrar con el mouse) · Espacio = onda · P = pausa · M = sonido.
+- Mando (Xbox, PlayStation, MFi) en todas: stick/cruceta, A = onda, Menú = pausa.
 
-## Qué incluye (sección 15 de la biblia)
+## Dirección de juego
 
-- **Nave** procedural que mezcla ambas referencias: cuerpo y vaina orgánica de la ref. 1, proa en doble púa y carne rosada de la ref. 2.
-  Proporción ~1:1 (las referencias son ~1:2) y ~62×65 px lógicos: ≈16 % del ancho y ≈8 % del alto en un iPhone.
-  9 frames de rolido pre-renderizados + núcleo brillante que marca la zona vulnerable (hitbox de 5 px).
-- **Resolución lógica adaptable**: mínimo 390×690 → iPhone ≈390×844, iPad ≈480×690; respeta el notch/safe areas.
-- **Enemigos**: Aguijón (enjambre rápido), Escarabajo (frente blindado, placas laterales que se desprenden y dejan expuesto el núcleo), Tábano (se detiene, brilla y suena antes de disparar; con el motor dañado se vuelve más lento).
-- **Combate metal contra metal**: empujes según dónde pega el disparo, **choques entre enemigos** con daño, cadena y puntos extra, rebote contra las paredes y pausa de impacto (hit-stop).
-- **Armas**: cañón doble automático, disparo de impacto (mejora), abanico (mejora), onda de choque (3 cargas, recarga cada 14 s; borra proyectiles).
-- **Integridad** en 10 segmentos, invulnerabilidad breve tras cada golpe, 3 vidas, combo multiplicador.
-- **Sonido sintetizado** por material (coraza aguda, placa, núcleo blando, choque grave, placa que cae con traqueteo) + pulso musical industrial.
-- Guion de ~2:20 min: lectura → combinación → presión → descanso → enjambre final. Al despejarlo arranca el sector siguiente, más duro.
+- **Escala**: la nave vuela a ~5000 m sobre un desierto árido con pocos oasis. El suelo avanza lento (13 pt/s) y casi no
+  se corre con la nave; de vez en cuando pasan nubes muy difusas entre el suelo y la acción.
+- **Nave** ~53 pt de ancho (≈13 % de un iPhone), campo de juego abierto sin paredes.
+- **Efectos sobrios**: destello corto, pocas chispas y restos, textos solo para eventos especiales (choques, placas, mejoras).
+- **Combate**: empujes según dónde pega el disparo, choques entre enemigos con daño y cadena, frente blindado del escarabajo,
+  placas laterales que se desprenden, aviso visible y audible antes del disparo del tábano, onda de choque.
 
 ## Estructura
 
 ```
-index.html      contenedor (viewport iOS, safe areas)
-src/main.js     loop, guion de oleadas, IA, física de empujes/choques, HUD
-src/art.js      arte procedural (placas, remaches, óxido, musgo, tejido) → sprites
-src/audio.js    síntesis WebAudio de impactos metálicos y música
-sprites.html    hoja de inspección de sprites
+MetalHive.xcodeproj          proyecto (carpeta sincronizada: todo lo que esté en MetalHive/ entra solo)
+MetalHive/App                entrada SwiftUI + vista SpriteKit (iOS y macOS)
+MetalHive/Engine             texturas, sonido (AVAudioEngine), mandos y teclado
+MetalHive/Game               escena, lógica, efectos, HUD, entrada, guion de oleadas
+MetalHive/Resources          arte, sonidos y fuente (Black Ops One, licencia OFL) — generados
+Config/                      entitlements del Mac (sandbox, requerido por Mac App Store)
+tools/assetgen               generador procedural de arte y sonido
 ```
+
+## Regenerar arte y sonido
+
+El arte (nave, enemigos, terreno, nubes, interfaz, ícono) y los efectos de sonido se generan por código.
+Necesita Node 18+, Playwright con Chromium y Python 3 con Pillow:
+
+```bash
+npm i -D playwright && npx playwright install chromium
+pip3 install pillow
+node tools/assetgen/generate.mjs
+```
+
+Escribe en `MetalHive/Resources/{Art,Sound}` y en el ícono de `Assets.xcassets`.
